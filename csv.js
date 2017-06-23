@@ -14,53 +14,55 @@
 // Extracts the next element in the row from file and inserts it into
 // csv.elem. The csv.nextRow and csv.nextCol are updated according to
 // csv.row and csv.col and which field termination character is found.
-function getNextElement (csv) {
+function getNextElement (csv,i) {
     var mode = "normal";
     var elemEnd = 0;
     csv.elem = "";
 
-    while ((elemEnd === 0) && (csv.content.length > 0)) {
+    while ((elemEnd === 0) && (i < csv.content.length)) {
         switch (mode) {
             case "quote":
-                if (csv.content[0] === "\"") {
-                    if ((csv.content.length > 1) &&
-                        (csv.content[1] === "\"")) {
+                if (csv.content[i] === "\"") {
+                    if ((i < (csv.content.length + 1)) &&
+                        (csv.content[i+1] === "\"")) {
                         csv.elem += "\"";
-                        csv.content = csv.content.substring(2);
+                        i = i + 2;
                     } else {
                         // End quoted string
-                        csv.content = csv.content.substring(1);
                         mode = "normal";
+                        i = i + 1;
                     }
                 } else {
-                    csv.elem += csv.content[0];
-                    csv.content = csv.content.substring(1);
+                    csv.elem += csv.content[i];
+                    i = i + 1;
                 }
                 break;
 
             default:
-                if (csv.content[0] === "\"") {
+                if (csv.content[i] === "\"") {
                     // Begin quoted string
                     mode = "quote";
-                    csv.content = csv.content.substring(1);
-                } else if (csv.content[0] === ",") {
+                    i = i + 1;
+                } else if (csv.content[i] === ",") {
                     // Element end
-                    csv.content = csv.content.substring(1);
                     csv.nextCol = csv.col + 1;
                     elemEnd = 1;
-                } else if (csv.content[0] === "\n") {
+                    i = i + 1;
+                } else if (csv.content[i] === "\n") {
                     // Row end
-                    csv.content = csv.content.substring(1);
                     csv.nextRow = csv.row + 1;
                     csv.nextCol = 0;
                     elemEnd = 1;
+                    i = i + 1;
                 } else {
                     // Read char
-                    csv.elem += csv.content[0];
-                    csv.content = csv.content.substring(1);
+                    csv.elem += csv.content[i];
+                    i = i + 1;
                 }
         }
     }
+
+   return i;
 }
 
 // readCSV
@@ -86,8 +88,9 @@ function readCSV (fileContent) {
                    this.col = this.nextCol;
                }};
 
-    while (csv.content.length !== 0) {
-        getNextElement (csv);
+   var i = 0;
+    while (i < csv.content.length) {
+        i = getNextElement(csv,i);
         csv.apply(array);
     }
 
